@@ -71,6 +71,45 @@ func SelectPersons(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+// SelectWithPaging - 
+func SelectWithPaging(c echo.Context) error {
+	db, err := conndb.ConnectToDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var limit, offset int
+	var Persons = []model.Person{}
+	
+	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON LIMIT ? OFFSET ?", limit, offset)
+	if err != nil {
+		//return err
+		fmt.Println(err)
+	}
+	defer rows.Close()
+	
+	for rows.Next() {
+		var idx nullable.Int
+		var name, email nullable.String
+
+		err := rows.Scan(&idx, &name, &email)
+		if err != nil {
+			return err
+		}
+
+		p := model.Person{
+			Idx : idx,
+			Name : name,
+			Email : email,
+		}
+		Persons = append(Persons, p)
+	}
+
+	resopnse := Persons
+	return c.JSON(http.StatusOK, resopnse)
+}
+
 // InsertPerson -
 func InsertPerson(c echo.Context) error {
 	db, err := conndb.ConnectToDb()
