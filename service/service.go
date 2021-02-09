@@ -79,16 +79,23 @@ func SelectWithPaging(c echo.Context) error {
 	}
 	defer db.Close()
 
-	var limit, offset int
+	var limit, offset nullable.Int
+	pg := new(model.Paging)
+	pg.Limit = limit
+	pg.Offset = offset
+	if err := c.Bind(pg); err != nil {
+		return err
+	}
+	fmt.Println("limit:", pg.Limit, ", offset:", pg.Offset)
+
 	var Persons = []model.Person{}
 	
-	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON LIMIT ? OFFSET ?", limit, offset)
+	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON LIMIT ? OFFSET ?", pg.Limit, pg.Offset)
 	if err != nil {
 		//return err
 		fmt.Println(err)
 	}
 	defer rows.Close()
-	
 	for rows.Next() {
 		var idx nullable.Int
 		var name, email nullable.String
