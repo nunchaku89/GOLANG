@@ -32,9 +32,9 @@ func Login(c echo.Context) error {
 
 	// Set custom claims
 	claims := model.JwtCustomClaims{
-		Idx:   1,
-		Name:  "Joe",
-		Email: "joe@abc.com",
+		Idx:   auth.Idx,
+		Name:  auth.Name,
+		Email: auth.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
