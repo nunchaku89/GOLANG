@@ -16,30 +16,21 @@ import (
 
 // Login -
 func Login(c echo.Context) error {
+	// Set custom claims
 	var idx int
 	var name, email string
-	auth := new(model.JwtCustomClaims)
-	auth.Idx = idx
-	auth.Name = name
-	auth.Email = email
-	if err := c.Bind(auth); err != nil {
+	claims := new(model.JwtCustomClaims)
+	claims.Idx = idx
+	claims.Name = name
+	claims.Email = email
+	if err := c.Bind(claims); err != nil {
 		return err
 	}
 
 	if auth.Name != "Joe" || auth.Email != "joe@abc.com" {
 		return echo.ErrUnauthorized
 	}
-
-	// Set custom claims
-	claims := model.JwtCustomClaims{
-		Idx:   auth.Idx,
-		Name:  auth.Name,
-		Email: auth.Email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-		},
-	}
-
+	
 	// Create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
