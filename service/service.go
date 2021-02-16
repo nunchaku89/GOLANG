@@ -23,14 +23,20 @@ func Login(c echo.Context) error {
 	claims.Idx = idx
 	claims.Name = name
 	claims.Email = email
+	claims.ExpiresAt = time.Now().Add(time.Hour * 72).Unix()
 	if err := c.Bind(claims); err != nil {
 		return err
 	}
 
-	if auth.Name != "Joe" || auth.Email != "joe@abc.com" {
+	// if claims.Name != "Joe" || claims.Email != "joe@abc.com" {
+	// 	return echo.ErrUnauthorized
+	// }
+	selectedName := SelectPersonByName(claims.Name).Name
+	selectedEmail := SelectPersonByName(claims.Name).Email
+	if  selectedName.String != claims.Name || selectedEmail.String != claims.Email {
 		return echo.ErrUnauthorized
 	}
-	
+
 	// Create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -191,6 +197,31 @@ func PageNum(c echo.Context) error {
 
 	resopnse := Persons
 	return c.JSON(http.StatusOK, resopnse)
+}
+
+// SelectPersonByName - 
+func SelectPersonByName(n string) *model.Person {
+	db, err := conndb.ConnectToDb()
+	if err != nil {
+		// return error
+	}
+	defer db.Close()
+
+	p := new(model.Person)
+
+	var idx nullable.Int
+	var name, email nullable.String
+
+	err = db.QueryRow("SELECT IDX, NAME, EMAIL FROM PERSON WHERE NAME = ?", n).Scan(&idx, &name, &email)
+	if err != nil {
+		// return err.Error()
+	}
+	
+	p.Idx = idx
+	p.Name = name
+	p.Email = email
+
+	return p
 }
 
 // InsertPerson -
