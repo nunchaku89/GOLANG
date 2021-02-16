@@ -1,13 +1,30 @@
 ### select
 GET http://localhost:1323/select HTTP/1.1
 
+### selectWithPaging
+POST http://localhost:1323/paging HTTP/1.1
+content-type: application/json
+
+{
+    "limit": 4,
+    "offset": 1
+}
+
+### selectWithPageNum
+POST http://localhost:1323/pagenum HTTP/1.1
+content-type: application/json
+
+{
+    "page": 4
+}
+
 ### insert
 POST http://localhost:1323/insert HTTP/1.1
 content-type: application/json
 
 {
-    "P_Name": "Peter",
-    "P_Email": "peter@abc.com"
+    "P_Name": "Bart",
+    "P_Email": "bart@abc.com"
 }
 
 ### update
@@ -15,8 +32,8 @@ PUT http://localhost:1323/update HTTP/1.1
 content-type: application/json
 
 {
-    "P_Name": "Tom",
-    "P_Email": "tom@abc.com",
+    "P_Name": "Homer",
+    "P_Email": "homer@abc.com",
     "P_Idx": 14
 }
 
@@ -25,11 +42,25 @@ DELETE http://localhost:1323/delete HTTP/1.1
 content-type: application/json
 
 {
-    "P_Idx": 11
+    "P_Idx": 13
 }
 
-### hello world
+### Accessible
 GET http://localhost:1323/ HTTP/1.1
+
+### Login
+POST http://localhost:1323/login
+Content-Type: application/json
+
+{
+    "J_Name": "Joe",
+    "J_Email": "joe@abc.com"
+}
+
+### Restricted
+GET http://localhost:1323/restricted HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJKX0lkeCI6MSwiSl9OYW1lIjoiSm9lIiwiSl9FbWFpbCI6ImpvZUBhYmMuY29tIiwiZXhwIjoxNjEzNzA2NzQzfQ.Y404KYAHFZ6qNv8O0-43ADODwyk0gO90lbRxyx4VyIk
+
 
 ###
 
