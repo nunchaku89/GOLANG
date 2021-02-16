@@ -1,33 +1,71 @@
 package service // import "service"
 
 import (
-	// "database/sql"
 	"fmt"
 	"log"
-
 	"net/http"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	nullable "gopkg.in/guregu/null.v3"
 
-	"model"
 	"conndb"
+	"model"
 )
 
-/* var (
-	db *sql.DB
-)
-
-// ConnectToDb - hahaha
-func ConnectToDb() (*sql.DB, error) {
-	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:13306)/test")
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("db is connected")
+// Login -
+func Login(c echo.Context) error {
+	var idx int
+	var name, email string
+	auth := new(model.JwtCustomClaims)
+	auth.Idx = idx
+	auth.Name = name
+	auth.Email = email
+	if err := c.Bind(auth); err != nil {
+		return err
 	}
-	return db, err
-} */
+
+	if auth.Name != "Joe" || auth.Email != "joe@abc.com" {
+		return echo.ErrUnauthorized
+	}
+
+	// Set custom claims
+	claims := model.JwtCustomClaims{
+		Idx:   1,
+		Name:  "Joe",
+		Email: "joe@abc.com",
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		},
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": t,
+	})
+}
+
+// Accessible -
+func Accessible(c echo.Context) error {
+	return c.String(http.StatusOK, "Accessible")
+}
+
+// Restricted -
+func Restricted(c echo.Context) error {
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(*model.JwtCustomClaims)
+	name := claims.Name
+	return c.String(http.StatusOK, "Welcome "+name+"!")
+}
 
 // SelectPersons -
 func SelectPersons(c echo.Context) error {
@@ -37,7 +75,7 @@ func SelectPersons(c echo.Context) error {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM person")
+	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +109,7 @@ func SelectPersons(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// SelectWithPaging - 
+// SelectWithPaging -
 func SelectWithPaging(c echo.Context) error {
 	db, err := conndb.ConnectToDb()
 	if err != nil {
@@ -79,17 +117,16 @@ func SelectWithPaging(c echo.Context) error {
 	}
 	defer db.Close()
 
-	var limit, offset nullable.Int
+	var limit, offset int
 	pg := new(model.Paging)
 	pg.Limit = limit
 	pg.Offset = offset
 	if err := c.Bind(pg); err != nil {
 		return err
 	}
-	fmt.Println("limit:", pg.Limit, ", offset:", pg.Offset)
 
 	var Persons = []model.Person{}
-	
+
 	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON LIMIT ? OFFSET ?", pg.Limit, pg.Offset)
 	if err != nil {
 		//return err
@@ -106,9 +143,57 @@ func SelectWithPaging(c echo.Context) error {
 		}
 
 		p := model.Person{
-			Idx : idx,
-			Name : name,
-			Email : email,
+			Idx:   idx,
+			Name:  name,
+			Email: email,
+		}
+		Persons = append(Persons, p)
+	}
+
+	resopnse := Persons
+	return c.JSON(http.StatusOK, resopnse)
+}
+
+// PageNum -
+func PageNum(c echo.Context) error {
+	db, err := conndb.ConnectToDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var page int
+	pg := new(model.Paging)
+	pg.Page = page
+	pg.Limit = 3
+	if err := c.Bind(pg); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	pg.Offset = (pg.Page - 1) * pg.Limit
+	fmt.Println("page:", pg.Page, ", limit:", pg.Limit, ", offset:", pg.Offset)
+
+	var Persons = []model.Person{}
+
+	rows, err := db.Query("SELECT IDX, NAME, EMAIL FROM PERSON LIMIT ? OFFSET ?", pg.Limit, pg.Offset)
+	if err != nil {
+		//return err
+		fmt.Println(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var idx nullable.Int
+		var name, email nullable.String
+
+		err := rows.Scan(&idx, &name, &email)
+		if err != nil {
+			return err
+		}
+
+		p := model.Person{
+			Idx:   idx,
+			Name:  name,
+			Email: email,
 		}
 		Persons = append(Persons, p)
 	}
@@ -176,7 +261,7 @@ func UpdatePerson(c echo.Context) error {
 	}
 	defer stmt.Close()
 
-	result, err2 :=stmt.Exec(p.Name.String, p.Email.String, p.Idx.Int64)
+	result, err2 := stmt.Exec(p.Name.String, p.Email.String, p.Idx.Int64)
 	if err2 != nil {
 		return err2
 	}
